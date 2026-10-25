@@ -35,7 +35,7 @@ export default async function SharedPage({ params }: PageProps<"/shared/[token]"
     <div className="flex h-dvh flex-col overflow-hidden">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-white/6 bg-background px-4">
         <Link href="/" className="flex size-8 items-center justify-center rounded-md transition-opacity hover:opacity-80">
-          <Image src="/brand/mascot-dark.png" alt="Outpost" width={24} height={24} className="size-6" />
+          <Image src="/brand/mascot-dark.png" alt="DraftLane" width={24} height={24} className="size-6" />
         </Link>
         <span className="text-sm font-medium">{workspace.name}</span>
         <Badge variant="outline" className="border-white/15 text-xs font-normal text-muted-foreground">

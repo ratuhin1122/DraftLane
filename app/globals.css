@@ -49,7 +49,7 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Outpost is dark-mode only, so :root and .dark share one palette — no light variant to maintain. */
+/* DraftLane is dark-mode only, so :root and .dark share one palette — no light variant to maintain. */
 :root,
 .dark {
   --background: oklch(0.13 0.004 285);
@@ -58,20 +58,20 @@
   --card-foreground: oklch(0.97 0.002 285);
   --popover: oklch(0.18 0.005 285);
   --popover-foreground: oklch(0.97 0.002 285);
-  /* Amber accent — brand color, deliberately not the generic AI-purple */
-  --primary: oklch(0.74 0.16 55);
-  --primary-foreground: oklch(0.15 0.02 55);
+  /* Mint accent — DraftLane brand color */
+  --primary: oklch(0.80 0.13 170);
+  --primary-foreground: oklch(0.17 0.03 185);
   --secondary: oklch(0.24 0.006 285);
   --secondary-foreground: oklch(0.97 0.002 285);
   --muted: oklch(0.22 0.006 285);
   --muted-foreground: oklch(0.64 0.01 285);
-  --accent: oklch(0.27 0.02 55);
-  --accent-foreground: oklch(0.93 0.03 60);
+  --accent: oklch(0.27 0.03 185);
+  --accent-foreground: oklch(0.93 0.03 170);
   --destructive: oklch(0.65 0.22 25);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.74 0.16 55 / 50%);
-  --chart-1: oklch(0.74 0.16 55);
+  --ring: oklch(0.80 0.13 170 / 50%);
+  --chart-1: oklch(0.80 0.13 170);
   --chart-2: oklch(0.6 0.14 40);
   --chart-3: oklch(0.5 0.02 285);
   --chart-4: oklch(0.4 0.01 285);
@@ -79,12 +79,12 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.15 0.004 285);
   --sidebar-foreground: oklch(0.97 0.002 285);
-  --sidebar-primary: oklch(0.74 0.16 55);
-  --sidebar-primary-foreground: oklch(0.15 0.02 55);
+  --sidebar-primary: oklch(0.80 0.13 170);
+  --sidebar-primary-foreground: oklch(0.17 0.03 185);
   --sidebar-accent: oklch(0.22 0.006 285);
   --sidebar-accent-foreground: oklch(0.97 0.002 285);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.74 0.16 55 / 50%);
+  --sidebar-ring: oklch(0.80 0.13 170 / 50%);
 }
 
 @layer base {
@@ -112,32 +112,19 @@
   }
 }
 
-/* Topographic contours (public/textures/topo.svg): Outpost's background identity, a nod to
-   mapping unknown territory. Opt-in per section, never over the doc or canvas editors.
-   The SVG is used as a mask over a color gradient, so lines glow amber at the center and cool to grey
-   at the edges; a second mask layer fades the whole map out softly. */
+/* DraftLane drafting grid: quiet structure around open-ended ideas. */
 @utility topo-bg {
   position: relative;
   isolation: isolate;
-
   &::before {
     content: "";
     position: absolute;
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background: radial-gradient(ellipse 40% 50% at 50% 42%,
-        oklch(0.78 0.16 60),
-        oklch(0.74 0.16 55 / 0.55) 45%,
-        oklch(1 0 0 / 0.45) 75%);
-    mask-image:
-      url("/textures/topo.svg"),
-      radial-gradient(ellipse 75% 70% at 50% 45%, black 30%, transparent 85%);
-    mask-size: cover, 100% 100%;
-    mask-position: center;
-    mask-repeat: no-repeat;
-    mask-composite: intersect;
-    opacity: 0.55;
+    background-image: linear-gradient(oklch(0.80 0.13 170 / 0.07) 1px, transparent 1px), linear-gradient(90deg, oklch(0.80 0.13 170 / 0.07) 1px, transparent 1px), radial-gradient(ellipse at 50% 20%, oklch(0.80 0.13 170 / 0.09), transparent 65%);
+    background-size: 48px 48px, 48px 48px, 100% 100%;
+    mask-image: linear-gradient(black, transparent);
   }
 }
 
@@ -147,7 +134,7 @@
   position: relative;
 
   &::after {
-    --mark: oklch(0.74 0.16 55 / 0.7);
+    --mark: oklch(0.80 0.13 170 / 0.7);
     --size: 14px;
     content: "";
     position: absolute;

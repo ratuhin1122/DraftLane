@@ -1,6 +1,6 @@
 // BlockNote's built-in "dark" theme ships its own (brownish) palette, not ours — override with
 // the app's actual tokens from globals.css so the doc panel matches the rest of the UI exactly.
-export const outpostDarkTheme = {
+export const draftlaneDarkTheme = {
   colors: {
     editor: { text: "oklch(0.98 0 0)", background: "oklch(0.12 0 0)" },
     menu: { text: "oklch(0.98 0 0)", background: "oklch(0.17 0 0)" },

@@ -1,17 +1,8 @@
-<div align="center">
+# DraftLane
 
-<img width="1280" height="720" alt="outpost (1)" src="https://github.com/user-attachments/assets/f7036758-0862-4941-828c-aedace29bbbc" />
+A shared space to turn rough ideas into diagrams, clear documents, and actionable plans with an AI collaborator.
 
-# Outpost
-
-**An agentic workspace: chat with an AI agent that draws on a canvas and writes docs, while your team works alongside it in real time.**
-
-Built step by step in a YouTube tutorial on the **roadsidecoder** channel.<br />
-## ▶ **Watch the tutorial:** https://youtu.be/vNXrFMSAsOA
-
-</div>
-
-## What you'll build
+## Workspace features
 
 - **An AI agent that works on two surfaces.** Ask for "a database schema, documented" and it draws the ERD on the canvas and writes the spec in the doc. Name a surface ("just the doc") and it sticks to it.
 - **A tldraw canvas** with a custom ERD table shape: editable columns, primary and foreign key badges, and arrows that snap to rows.
@@ -46,8 +37,8 @@ Built step by step in a YouTube tutorial on the **roadsidecoder** channel.<br />
 ### 1. Install
 
 ```bash
-git clone <this-repo-url> outpost
-cd outpost
+git clone <this-repo-url> draftlane
+cd draftlane
 npm install
 ```
 
@@ -148,7 +139,7 @@ tldraw-sync/                The canvas sync server (a Cloudflare Worker)
 
 ## Scaling up
 
-Outpost runs on free tiers out of the box. As you grow, here's how to scale each piece:
+DraftLane runs on free tiers out of the box. As you grow, here's how to scale each piece:
 
 | Today                                                                                                                                                                                 | To scale up                                                                                                                                                             |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

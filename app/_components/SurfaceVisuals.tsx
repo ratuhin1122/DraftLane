@@ -7,7 +7,7 @@ export function CanvasMock() {
       <svg viewBox="0 0 100 62.5" className="h-full w-full">
         <defs>
           <marker id="mockArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-            <path d="M0,0 L6,3 L0,6 Z" fill="oklch(0.74 0.16 55)" />
+            <path d="M0,0 L6,3 L0,6 Z" fill="oklch(0.80 0.13 170)" />
           </marker>
         </defs>
         <rect x="10" y="14" width="26" height="15" rx="1.5" className="fill-white/6 stroke-white/25" strokeWidth="0.4" />
@@ -17,13 +17,13 @@ export function CanvasMock() {
           <tspan x="75">Send welcome</tspan>
           <tspan x="75" dy="3.8">email</tspan>
         </text>
-        <line x1="36" y1="21.5" x2="61" y2="21.5" stroke="oklch(0.74 0.16 55)" strokeWidth="0.5" markerEnd="url(#mockArrow)" />
+        <line x1="36" y1="21.5" x2="61" y2="21.5" stroke="oklch(0.80 0.13 170)" strokeWidth="0.5" markerEnd="url(#mockArrow)" />
         <rect x="36" y="38" width="26" height="15" rx="1.5" className="fill-white/6 stroke-white/25" strokeWidth="0.4" />
         <text x="49" y="45" textAnchor="middle" className="fill-foreground text-[3px]">
           <tspan x="49">Onboarding</tspan>
           <tspan x="49" dy="3.8">checklist</tspan>
         </text>
-        <path d="M75 29 Q 75 38 62 44" fill="none" stroke="oklch(0.74 0.16 55)" strokeWidth="0.5" markerEnd="url(#mockArrow)" />
+        <path d="M75 29 Q 75 38 62 44" fill="none" stroke="oklch(0.80 0.13 170)" strokeWidth="0.5" markerEnd="url(#mockArrow)" />
       </svg>
     </Frame>
   );

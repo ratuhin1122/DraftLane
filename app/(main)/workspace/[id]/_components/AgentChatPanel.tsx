@@ -44,7 +44,7 @@ export function AgentChatPanel({ chat, isReady }: { chat: WorkspaceAgentChat; is
         >
           <div className="flex h-14 shrink-0 items-center gap-2 border-b border-white/6 px-4 text-sm font-medium">
             <Image src="/brand/mascot-dark.png" alt="" width={18} height={18} className="size-4.5" />
-            Outpost Agent
+            DraftLane Agent
           </div>
 
           <div className="flex-1 space-y-3 overflow-y-auto p-4">

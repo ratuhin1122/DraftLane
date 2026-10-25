@@ -3,26 +3,27 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MapAnnotations } from "./_components/MapAnnotations";
+import { CanvasMock, DocsMock } from "./_components/SurfaceVisuals";
 import { PricingPlans } from "@/components/PricingPlans";
 import { AUDIENCES, STEPS, SURFACES } from "./_data/landing";
 
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      {/* Hero, over the topographic contours that give Outpost its look */}
+      {/* DraftLane hero, framed by a quiet drafting grid */}
       <section className="topo-bg px-6 pt-10 pb-24 md:px-10 md:pt-16">
         <MapAnnotations />
         <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
-          <SectionLabel>Early access</SectionLabel>
+          <SectionLabel>From first draft to shared direction</SectionLabel>
 
           <h1 className="mt-2 max-w-3xl text-4xl font-semibold tracking-tight md:text-6xl">
-            An <span className="text-primary">outpost</span> for whatever
-            you&apos;re building
+            Your next idea.
+            <br /><span className="text-primary">A clearer way forward.</span>
           </h1>
 
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            Chat with an AI agent that draws on your canvas and writes your
-            docs, while your whole team works alongside it in real time.
+            Sketch the possibilities. Shape the plan. DraftLane brings your
+            canvas, documents, and AI collaborator into one shared workspace.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -37,24 +38,16 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Product walkthrough. Muted + playsInline are required for autoplay on mobile; WebM is
-            smaller, with MP4 as the fallback for browsers without VP9. */}
-        <div className="survey-frame scroll-tilt mx-auto mt-16 max-w-5xl">
-          {/* A slightly narrower frame than the 16:9 video, so object-cover trims the sides. */}
-          <div className="aspect-16/9.25 overflow-hidden rounded-2xl border border-white/10 bg-card shadow-2xl shadow-black/40">
-            <video
-              autoPlay
-              muted
-              loop
-              playsInline
-              poster="/videos/hero-poster.jpg"
-              aria-label="Outpost walkthrough: the agent draws an architecture diagram and writes the spec"
-              className="size-full object-cover"
-            >
-              <source src="/videos/hero.webm" type="video/webm" />
-              <source src="/videos/hero.mp4" type="video/mp4" />
-            </video>
+        <div className="mx-auto mt-14 max-w-5xl overflow-hidden rounded-2xl border border-primary/25 bg-card shadow-2xl shadow-primary/5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-6 py-4">
+            <span className="text-sm font-medium">The next big idea / Product launch</span>
+            <span className="rounded-full bg-primary/10 px-3 py-1 font-mono text-xs text-primary">DRAFT → REFINE → ALIGN</span>
           </div>
+          <div className="grid gap-px bg-white/10 md:grid-cols-2">
+            <div className="bg-card p-5"><p className="mb-4 font-mono text-xs text-muted-foreground">01 / MAP THE POSSIBILITIES</p><CanvasMock /></div>
+            <div className="bg-card p-5"><p className="mb-4 font-mono text-xs text-muted-foreground">02 / MAKE THE PLAN CLEAR</p><DocsMock /></div>
+          </div>
+          <p className="border-t border-white/10 px-6 py-3 text-xs text-muted-foreground">A preview of your workspace: connected thinking, from sketch to spec.</p>
         </div>
       </section>
 
@@ -85,7 +78,7 @@ export default function Home() {
               One agent, one workspace, your whole team
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Outpost isn&apos;t another AI diagram generator. The same agent
+              Keep the thinking connected. Your workspace agent
               reasons across your canvas and your docs, turning a rough sketch
               into a written spec without you copying anything by hand. And your
               team is right there with you.
@@ -114,7 +107,7 @@ export default function Home() {
         <div className="mx-auto max-w-5xl">
           <SectionLabel>02 · The route</SectionLabel>
           <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
-            Watch it think, not just the result
+            A little direction. A lot of possibility.
           </h2>
           <div className="mt-12 grid gap-10 md:grid-cols-3">
             {STEPS.map((step, i) => (
@@ -159,7 +152,7 @@ export default function Home() {
             className="opacity-80"
           />
           <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">
-            Give your workspace a collaborator
+            Take the idea out of your head.
           </h2>
           <Button asChild size="lg" className="gap-2 text-base">
             <Link href="/sign-up">
@@ -170,7 +163,7 @@ export default function Home() {
       </section>
 
       <footer className="border-t border-white/10 px-6 py-8 text-center text-sm text-muted-foreground md:px-10">
-        Made with ❤️ by RoadsideCoder
+        DraftLane · Space to think. Direction to build.
       </footer>
     </div>
   );

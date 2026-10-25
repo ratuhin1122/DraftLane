@@ -8,7 +8,7 @@ import { useUpgradeDialog } from "@/components/UpgradeDialog";
 
 type Usage = Awaited<ReturnType<typeof getActivePromptUsage>>;
 
-const USAGE_CHANGED_EVENT = "outpost:prompt-usage-changed";
+const USAGE_CHANGED_EVENT = "draftlane:prompt-usage-changed";
 
 // Called after an agent response, so the header count stays current without a reload.
 export function refreshPromptUsage() {
