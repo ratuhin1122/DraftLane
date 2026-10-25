@@ -15,6 +15,7 @@ import { useWorkspaceEditors } from "@/components/WorkspaceEditorsContext";
 import type { SupabaseYjsProvider } from "@/lib/supabase-yjs-provider";
 import { toBase64 } from "@/lib/base64";
 import { colorForUser } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 import { draftlaneDarkTheme } from "@/lib/blocknote-theme";
 
 const SAVE_DEBOUNCE_MS = 1000;
@@ -104,6 +105,11 @@ function CollaborativeEditor({
 
   return (
     <div className="h-full overflow-y-auto pt-6">
+      {!supabase && (
+        <p role="status" className="mx-6 mb-4 rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+          Your edits are saved. Live collaboration is unavailable until Supabase is configured.
+        </p>
+      )}
       <BlockNoteView editor={editor} theme={draftlaneDarkTheme} />
     </div>
   );

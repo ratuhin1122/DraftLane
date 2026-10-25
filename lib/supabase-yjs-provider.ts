@@ -20,7 +20,7 @@ const PEER_SYNC_WAIT_MS = 500;
 // realtime.messages) and sign clients in with their Clerk session token.
 export class SupabaseYjsProvider {
   readonly awareness: Awareness;
-  private channel: RealtimeChannel;
+  private channel?: RealtimeChannel;
   private subscribed = false;
   private isReady = false;
   private readyTimeout?: ReturnType<typeof setTimeout>;
@@ -33,6 +33,11 @@ export class SupabaseYjsProvider {
     private onReady: () => void
   ) {
     this.awareness = new Awareness(doc);
+    if (!supabase) {
+      // Defer until the caller has assigned the provider, just like network readiness.
+      queueMicrotask(this.markReady);
+      return;
+    }
     this.channel = supabase.channel(`doc:${roomId}`, { config: { broadcast: { self: false } } });
 
     this.channel
@@ -91,7 +96,7 @@ export class SupabaseYjsProvider {
   }
 
   private send(event: string, payload: Record<string, unknown>) {
-    if (!this.subscribed) return;
+    if (!this.subscribed || !this.channel) return;
     this.channel.send({ type: "broadcast", event, payload });
   }
 
@@ -103,6 +108,6 @@ export class SupabaseYjsProvider {
     this.doc.off("update", this.handleDocUpdate);
     this.awareness.off("update", this.handleAwarenessUpdate);
     this.awareness.destroy();
-    supabase.removeChannel(this.channel);
+    if (supabase && this.channel) void supabase.removeChannel(this.channel);
   }
 }
