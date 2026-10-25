@@ -9,7 +9,10 @@
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
-    "seed": "tsx --env-file=.env prisma/seed.ts"
+    "seed": "tsx --env-file=.env prisma/seed.ts",
+    "test": "tsx --test --test-force-exit tests/*.test.ts",
+    "test:integration": "tsx --test --test-force-exit tests/*.integration.test.mts",
+    "db:start": "powershell -NoProfile -File scripts/start-local-db.ps1"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.67",

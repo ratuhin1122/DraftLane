@@ -11,6 +11,8 @@ export type WorkspaceCardData = {
   description: string | null;
   status: WorkspaceStatus;
   lastActivity: Date;
+  canEdit?: boolean;
+  canDelete?: boolean;
   creator: { name: string | null; imageUrl: string | null };
 };
 

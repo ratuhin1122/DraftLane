@@ -120,7 +120,17 @@ export const docToolDefs = {
   },
 };
 
-export const agentToolDefs = { ...canvasToolDefs, ...docToolDefs };
+export const taskToolDefs = {
+  createTask: {
+    description: "Create a persistent implementation task in the workspace task list. Group related tasks by phase.",
+    inputSchema: z.object({ id: z.string().min(1).max(50), title: z.string().min(1).max(240), description: z.string().max(5000), phase: z.string().min(1).max(100) }),
+  },
+  updateTaskStatus: {
+    description: "Update a task's status using an existing task id from the current task list.",
+    inputSchema: z.object({ taskId: z.string(), status: z.enum(["TODO", "IN_PROGRESS", "DONE"]) }),
+  },
+};
+export const agentToolDefs = { ...canvasToolDefs, ...docToolDefs, ...taskToolDefs };
 
 export type ToolResult = { success: true } | { success: false; error: string };
 export const ok = (): ToolResult => ({ success: true });

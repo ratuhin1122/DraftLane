@@ -178,3 +178,33 @@ After changing `prisma/schema.prisma`, create and apply a migration, run `npx pr
 ## License
 
 [GPL-3.0](LICENSE). The PDF export uses BlockNote's [`@blocknote/xl-pdf-exporter`](https://www.blocknotejs.org/docs/features/export/pdf), which is GPL-3.0 licensed, so the whole project is too. You can use, change and share this code, including commercially, as long as your version stays open source under GPL-3.0. To use it in a closed-source product, remove the PDF exporter or get a [BlockNote commercial license](https://www.blocknotejs.org/pricing).
+
+
+## Workspace collaboration
+
+- Open **Activity** in a workspace for **Comments**, **History**, **Tasks**, and (for the owner) **Access**.
+- Grant Viewer, Commenter, or Editor access by the email of someone who has signed in to DraftLane. The workspace appears on their dashboard. No invitation email is sent. Organization membership can also grant access; only owners and organization administrators manage permissions.
+- Comments can reference a selected canvas shape or the current document block. Resolve or reopen discussions, and jump back to their references.
+- History contains automatic checkpoints during edits, snapshots before AI work, and named manual versions. Restore brings back the document, canvas, and tasks; a backup is created first. Comments and access rules are retained. Connected clients reload, and outdated pending writes are rejected.
+- **Canvas → roadmap** writes a phased roadmap in the document and creates persistent tasks. **Extract tasks** turns existing canvas/document content into a task list. Tasks have To do, In progress, and Done states.
+
+### Offline and reconnect behavior
+
+Document edits use Yjs text CRDTs. Canvas records use separate Yjs registers: edits to different objects merge, and simultaneous changes to the same object resolve deterministically. Changes apply locally immediately and are cached in this browser before network saving. The authenticated sync endpoint retries failed writes and exchanges updates about every two seconds; Supabase and the public tldraw demo server are not required. Canvas text is one object register, so simultaneous edits to the same shape's properties choose one deterministic value rather than merging individual letters.
+
+A restored version starts a new generation so old offline edits cannot overwrite it. Offline image uploads, comments, task changes, AI requests, and access changes require a connection. Browser drafts depend on available local storage; do not clear site data before offline changes sync. A shared read-only public link is still a saved snapshot; invited signed-in viewers use the live workspace.
+
+### Local database and checks
+
+Local PostgreSQL data lives in ignored `.local/postgres`, outside `node_modules`, so dependency reinstalls cannot remove it. On this Windows setup, run `npm run db:start` after restarting the computer, then `npm run dev`. The startup script never creates or resets data. Hosted installations should configure their own PostgreSQL connection strings.
+
+Run `npm test` for offline/merge/permission regressions. Database integration tests require a separate disposable database: set `DATABASE_URL`, `DIRECT_URL`, and `TEST_DATABASE_URL` to that isolated database, apply migrations there, then run `npm run test:integration`. The integration fixture deletes only the test user and workspace it created. Do not point integration tests at a production database.
+
+
+## Permanent account deletion
+
+Open the profile menu and select **Delete account**, then type `DELETE` to confirm. This removes the Clerk identity and local user, owned workspaces (including docs, canvases, snapshots and tasks), authored comments, memberships, prompt records, and tracked uploads. Other people's workspaces remain; snapshot attribution is anonymized. DraftLane browser drafts are cleared and the user is signed out.
+
+A deletion receipt lets the account page retry if a provider, file, or database request fails. Pending deletion requests block workspace access and user-row recreation. Completed cleanup jobs are removed.
+
+To synchronize deletions performed directly in the Clerk Dashboard or outside the app, register `/api/webhooks/clerk` for `user.deleted` and set `CLERK_WEBHOOK_SIGNING_SECRET`. The endpoint verifies signatures and performs idempotent local cleanup. See [Clerk's webhook setup guide](https://clerk.com/docs/guides/development/webhooks/syncing). The app's own Delete account flow works without webhook configuration.

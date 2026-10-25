@@ -1,3 +1,4 @@
+import { prisma } from "@/lib/prisma";
 import { google } from "@ai-sdk/google";
 import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { agentToolDefs } from "@/lib/agent-tools";
@@ -14,6 +15,9 @@ Choosing where to work:
 - To turn one surface into the other ("write up this diagram as a spec", "draw what the doc describes"), read its current state below.
 - If a surface you need is marked as not open, tell the user to switch to the Both view instead of calling its tools.
 - After making changes, reply with one short sentence on what you did.
+
+Task rules:
+- When asked for a roadmap or implementation tasks, use createTask for concrete tasks, grouped by phase. Write explanatory roadmaps in the document. Preserve existing canvas objects unless asked to redraw. Never claim tasks were created unless the createTask calls succeed.
 
 Doc rules:
 - Write content as Markdown in the doc tools: headings, lists, checklists, tables, code blocks, bold, links.
@@ -53,7 +57,7 @@ export async function POST(req: Request) {
     docContext: string | null;
   } = await req.json();
 
-  if (!(await canAccessWorkspace(workspaceId))) return new Response("Workspace not found", { status: 404 });
+  if (!(await canAccessWorkspace(workspaceId, "edit"))) return new Response("Workspace not found", { status: 404 });
 
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim()) {
     return new Response("The AI agent is not configured. Add GOOGLE_GENERATIVE_AI_API_KEY to .env.local and restart the server.", { status: 503 });
@@ -69,9 +73,10 @@ export async function POST(req: Request) {
     if (used >= limit) return Response.json({ error: PROMPT_LIMIT_ERROR, used, limit }, { status: 402 });
   }
 
+  const tasks = await prisma.workspaceTask.findMany({ where: { workspaceId }, select: { id: true, title: true, phase: true, status: true }, take: 150 });
   const result = streamText({
     model: google(process.env.GOOGLE_GENERATIVE_AI_MODEL || "gemini-3.5-flash-lite"),
-    system: `${SYSTEM_PROMPT}\n\nCurrent canvas state:\n${canvasContext ?? NOT_OPEN}\n\nCurrent doc state:\n${docContext ?? NOT_OPEN}`,
+    system: `${SYSTEM_PROMPT}\n\nCurrent canvas state:\n${canvasContext ?? NOT_OPEN}\n\nCurrent doc state:\n${docContext ?? NOT_OPEN}\n\nCurrent implementation tasks:\n${JSON.stringify(tasks)}`,
     // No `execute` on any tool: they run in the browser against the live canvas and doc editors
     // (see hooks/use-workspace-agent-chat.ts), since that's where the real state lives.
     tools: agentToolDefs,

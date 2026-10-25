@@ -9,19 +9,17 @@ import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import type { Block, BlockNoteEditor } from "@blocknote/core";
 import { CollaborationExtension } from "@blocknote/core/yjs";
-import { saveDocContent } from "@/actions/doc";
-import type { Prisma } from "@/lib/generated/prisma/client";
 import { useCollaborativeDoc } from "@/hooks/use-collaborative-doc";
 import { useWorkspaceEditors } from "@/components/WorkspaceEditorsContext";
 import type { SupabaseYjsProvider } from "@/lib/supabase-yjs-provider";
 import { imageUploadProps } from "@/lib/image-upload";
 import { writeDocDraft } from "@/lib/workspace-draft";
-import { toBase64 } from "@/lib/base64";
 import { colorForUser } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { WorkspaceSync } from "@/lib/workspace-sync";
+import { permits } from "@/lib/workspace-permissions";
+import { useWorkspaceSession } from "@/components/WorkspaceSession";
 import { draftlaneDarkTheme } from "@/lib/blocknote-theme";
 
-const SAVE_DEBOUNCE_MS = 1000;
 
 type DocEditorProps = {
   workspaceId: string;
@@ -61,6 +59,8 @@ function CollaborativeEditor({
   provider: SupabaseYjsProvider;
   user: { name: string; color: string };
 }) {
+  const { generation, role } = useWorkspaceSession();
+  const editable = permits(role, "edit");
   const fragment = doc.getXmlFragment("document-store");
   const uploadEditorRef = useRef<BlockNoteEditor | null>(null);
   const editor = useCreateBlockNote({
@@ -108,47 +108,14 @@ function CollaborativeEditor({
     }
   }, [editor, fragment, initialContent]);
 
-  // Save only our own edits (remote ones are saved by whoever made them). The server merges
-  // the state, and also keeps a readable JSON copy for server-side features.
   useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    const save = () => {
-      timeout = undefined;
-      const content = JSON.parse(JSON.stringify(editor.document)) as Prisma.InputJsonValue;
-      saveDocContent(workspaceId, toBase64(Y.encodeStateAsUpdate(doc)), content).catch(() => {
-        toast.error("Document could not save. Please retry before leaving this workspace.");
-      });
-    };
-    const handleUpdate = (_update: Uint8Array, origin: unknown) => {
-      if (origin === provider) return;
-      writeDocDraft(workspaceId, toBase64(Y.encodeStateAsUpdate(doc)));
-      clearTimeout(timeout);
-      timeout = setTimeout(save, SAVE_DEBOUNCE_MS);
-    };
-
-    doc.on("update", handleUpdate);
-    timeout = setTimeout(save, SAVE_DEBOUNCE_MS);
-    const pageHide = () => save();
-    window.addEventListener("pagehide", pageHide);
-    return () => {
-      doc.off("update", handleUpdate);
-      window.removeEventListener("pagehide", pageHide);
-      // Flush a pending save rather than dropping the last edits when leaving the page.
-      if (timeout) {
-        clearTimeout(timeout);
-        save();
-      }
-    };
-  }, [doc, editor, provider, workspaceId]);
+    const sync = new WorkspaceSync(workspaceId, "doc", generation, doc, state => writeDocDraft(workspaceId, state, generation), !editable);
+    return () => sync.destroy();
+  }, [workspaceId, generation, doc, editable]);
 
   return (
     <div className="h-full overflow-y-auto pt-6">
-      {!supabase && (
-        <p role="status" className="mx-6 mb-4 rounded-md border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-          Your edits are saved. Live collaboration is unavailable until Supabase is configured.
-        </p>
-      )}
-      <BlockNoteView editor={editor} theme={draftlaneDarkTheme} />
+      <BlockNoteView editable={editable} editor={editor} theme={draftlaneDarkTheme} />
     </div>
   );
 }

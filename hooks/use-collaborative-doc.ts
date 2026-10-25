@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import * as Y from "yjs";
 import { SupabaseYjsProvider } from "@/lib/supabase-yjs-provider";
+import { permits } from "@/lib/workspace-permissions";
+import { useWorkspaceSession } from "@/components/WorkspaceSession";
 import { readDocDraft } from "@/lib/workspace-draft";
 import { fromBase64 } from "@/lib/base64";
 
 // Creates the shared Yjs doc for a workspace and connects it to Realtime. Returns null until
 // the provider is ready, so the editor only mounts once it has the saved + peers' latest state.
 export function useCollaborativeDoc(workspaceId: string, initialState: string | null) {
+  const { generation, role } = useWorkspaceSession();
   const [collab, setCollab] = useState<{ doc: Y.Doc; provider: SupabaseYjsProvider } | null>(null);
   // Only the first saved state matters — later server refreshes (e.g. after a rename) must not
   // reconnect the editor.
@@ -17,7 +20,7 @@ export function useCollaborativeDoc(workspaceId: string, initialState: string | 
   useEffect(() => {
     const doc = new Y.Doc();
     if (savedState) Y.applyUpdate(doc, fromBase64(savedState));
-    const draft = readDocDraft(workspaceId);
+    const draft = permits(role, "edit") ? readDocDraft(workspaceId, generation) : null;
     if (draft) Y.applyUpdate(doc, fromBase64(draft));
     const provider = new SupabaseYjsProvider(doc, workspaceId, () => setCollab({ doc, provider }));
 
@@ -25,7 +28,7 @@ export function useCollaborativeDoc(workspaceId: string, initialState: string | 
       provider.destroy();
       doc.destroy();
     };
-  }, [workspaceId, savedState]);
+  }, [workspaceId, savedState, generation, role]);
 
   return collab;
 }

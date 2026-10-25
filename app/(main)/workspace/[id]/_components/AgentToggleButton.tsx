@@ -30,6 +30,17 @@ export function AgentToggleButton({ workspaceId, initialPrompt }: { workspaceId:
     router.replace(pathname, { scroll: false });
   }, [initialPrompt, canvasEditor, docEditor, chat, router, pathname]);
 
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail.workspaceId !== workspaceId) return;
+      setIsOpen(true);
+      void chat.sendMessage({ text: detail.prompt });
+    };
+    window.addEventListener("draftlane:agent-request", handler);
+    return () => window.removeEventListener("draftlane:agent-request", handler);
+  }, [workspaceId, chat]);
+
   return (
     <>
       <Button size="sm" aria-label={isOpen ? "Close agent" : "Ask Agent"} className="h-9 gap-1.5 px-2 sm:px-3" onClick={() => setIsOpen((v) => !v)}>

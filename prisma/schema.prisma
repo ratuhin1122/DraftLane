@@ -30,6 +30,7 @@ model User {
   // not here, so this is just "who to blame/bill" rather than an access-control source of truth.
   createdWorkspaces Workspace[]
   agentPrompts      AgentPrompt[]
+  memberships       WorkspaceMember[]
 }
 
 model Workspace {
@@ -47,6 +48,7 @@ model Workspace {
   position    Float           @default(0)
   // Public read-only link token; null means sharing is off. Resetting it kills old links.
   shareToken  String?         @unique
+  generation  Int             @default(0)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
@@ -56,6 +58,10 @@ model Workspace {
   doc          Doc?
   canvas       Canvas?
   agentPrompts AgentPrompt[]
+  members      WorkspaceMember[]
+  comments     WorkspaceComment[]
+  snapshots    WorkspaceSnapshot[]
+  tasks        WorkspaceTask[]
 
   @@index([creatorId])
   @@index([clerkOrgId])
@@ -75,6 +81,7 @@ model Doc {
 }
 
 model Canvas {
+  yjsState    Bytes?
   id          String   @id @default(cuid())
   workspaceId String   @unique
   // tldraw shape/store snapshot.
@@ -100,4 +107,78 @@ model AgentPrompt {
   workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@index([ownerId, createdAt])
+}
+
+model WorkspaceMember {
+  id          String @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        String @default("VIEWER")
+  createdAt   DateTime @default(now())
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model WorkspaceComment {
+  id          String @id @default(cuid())
+  workspaceId String
+  authorId    String
+  authorName  String
+  body        String
+  surface     String @default("WORKSPACE")
+  anchorId    String?
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@index([workspaceId, createdAt])
+}
+
+model WorkspaceSnapshot {
+  id          String @id @default(cuid())
+  workspaceId String
+  label       String
+  authorName  String
+  authorId    String?
+  generation  Int
+  docContent  Json?
+  docState    Bytes?
+  canvasContent Json?
+  canvasState Bytes?
+  tasks       Json?
+  createdAt   DateTime @default(now())
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@index([workspaceId, createdAt])
+}
+
+model WorkspaceTask {
+  id          String @id @default(cuid())
+  workspaceId String
+  title       String
+  description String @default("")
+  phase       String @default("Implementation")
+  status      String @default("TODO")
+  sourceKey   String?
+  position    Int @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@unique([workspaceId, sourceKey])
+  @@index([workspaceId, position])
+}
+
+model AccountDeletion {
+  id              String @id @default(cuid())
+  clerkId         String @unique
+  tokenHash       String
+  providerDeleted Boolean @default(false)
+  createdAt       DateTime @default(now())
+}
+
+model UploadedAsset {
+  filename    String @id
+  ownerClerkId String
+  createdAt   DateTime @default(now())
+  @@index([ownerClerkId])
 }

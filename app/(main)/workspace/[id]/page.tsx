@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import type { Block } from "@blocknote/core";
 import type { TLEditorSnapshot } from "tldraw";
 import { prisma } from "@/lib/prisma";
-import { canAccessWorkspace } from "@/lib/workspace-access";
+import { getWorkspaceRole } from "@/lib/workspace-access";
 import { Button } from "@/components/ui/button";
 import { EditableWorkspaceName } from "./_components/EditableWorkspaceName";
 import { DocEditor } from "@/components/DocEditorLoader";
@@ -14,6 +14,10 @@ import { ShareDialog } from "./_components/ShareDialog";
 import { getEntitlements, workspaceOwnerId, workspaceOwnerSelect } from "@/lib/billing";
 import { PlanButton } from "@/components/PlanButton";
 import { ResponsiveWorkspacePanels } from "@/components/ResponsiveWorkspacePanels";
+import { WorkspaceActivity } from "@/components/WorkspaceActivity";
+import { WorkspaceSession } from "@/components/WorkspaceSession";
+import { permits } from "@/lib/workspace-permissions";
+import { ensureCanvasState, ensureDocState } from "@/lib/workspace-persistence";
 import { WorkspaceEditorsProvider } from "@/components/WorkspaceEditorsContext";
 import {
   ResizableHandle,
@@ -35,16 +39,19 @@ export default async function WorkspacePage({
   const view = parseViewMode(viewParam);
 
   // 404 rather than 403 so outsiders can't tell whether a workspace id exists.
-  if (!(await canAccessWorkspace(id))) notFound();
+  const role = await getWorkspaceRole(id);
+  if (!role) notFound();
+  await Promise.all([ensureCanvasState(id), ensureDocState(id)]);
 
   const workspace = await prisma.workspace.findUnique({
     where: { id },
     select: {
       name: true,
+      generation: true,
       shareToken: true,
       ...workspaceOwnerSelect,
       doc: { select: { content: true, yjsState: true } },
-      canvas: { select: { content: true, updatedAt: true } },
+      canvas: { select: { content: true, updatedAt: true, yjsState: true } },
     },
   });
   if (!workspace) notFound();
@@ -55,6 +62,7 @@ export default async function WorkspacePage({
 
   return (
     // Lets header UI (agent panel, Share dialog) reach the live doc and canvas editors.
+    <WorkspaceSession generation={workspace.generation} role={role}>
     <WorkspaceEditorsProvider>
       <div className="flex h-dvh flex-col overflow-hidden">
         {/* Logo (back to dashboard) and name left, view switcher centered, actions right. */}
@@ -72,7 +80,7 @@ export default async function WorkspacePage({
                 className="size-6"
               />
             </Link>
-            <EditableWorkspaceName workspaceId={id} initialName={workspace.name} />
+            {permits(role, "edit") ? <EditableWorkspaceName workspaceId={id} initialName={workspace.name} /> : <span className="min-w-0 truncate text-sm">{workspace.name}</span>}
           </div>
 
           <div className="order-3 col-span-2 mx-auto flex items-center gap-1 rounded-lg lg:order-none border border-white/10 bg-white/3 p-1">
@@ -93,14 +101,15 @@ export default async function WorkspacePage({
 
           <div className="flex min-w-0 items-center justify-end gap-1 sm:gap-2 lg:flex-1">
             <div className="hidden sm:block"><PlanButton upgradeOnlyWhenOut /></div>
-            <ShareDialog
+            <WorkspaceActivity workspaceId={id} role={role} />
+            {permits(role, "manage") && <ShareDialog
               workspaceId={id}
               workspaceName={workspace.name}
               initialShareToken={workspace.shareToken}
               canShare={entitlements.publicSharing}
               canExportPdf={entitlements.pdfExport}
-            />
-            <AgentToggleButton workspaceId={id} initialPrompt={typeof prompt === "string" ? prompt : undefined} />
+            />}
+            {permits(role, "edit") && <AgentToggleButton workspaceId={id} initialPrompt={typeof prompt === "string" ? prompt : undefined} />}
           </div>
         </header>
 
@@ -123,10 +132,12 @@ export default async function WorkspacePage({
                 workspaceId={id}
                 initialSnapshot={workspace.canvas?.content as TLEditorSnapshot | null}
                 initialSavedAt={workspace.canvas?.updatedAt.getTime() ?? 0}
+                initialState={workspace.canvas?.yjsState ? Buffer.from(workspace.canvas.yjsState).toString("base64") : null}
               />
           </ResizablePanel>
         </ResponsiveWorkspacePanels>
       </div>
     </WorkspaceEditorsProvider>
+    </WorkspaceSession>
   );
 }

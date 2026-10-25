@@ -5,10 +5,14 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
 import type { Editor } from "tldraw";
 import type { BlockNoteEditor } from "@blocknote/core";
-import { agentToolDefs, docToolDefs, fail, type ToolResult } from "@/lib/agent-tools";
+import { agentToolDefs, docToolDefs, taskToolDefs, fail, type ToolResult } from "@/lib/agent-tools";
 import { PROMPT_LIMIT_ERROR, UPGRADE_REASONS } from "@/lib/plan-limits";
 import { executeCanvasTool, summarizeCanvas, createDrawingPlacement, focusDrawing, type DrawingPlacement, type ShapeIdMap } from "@/lib/agent-canvas";
 import { executeDocTool, summarizeDoc } from "@/lib/agent-doc";
+import { useWorkspaceSession } from "@/components/WorkspaceSession";
+import { createWorkspaceSnapshot, createWorkspaceTask, updateWorkspaceTask } from "@/actions/collaboration";
+import { flushWorkspace } from "@/lib/workspace-events";
+import { toast } from "sonner";
 import { refreshPromptUsage } from "@/components/PlanButton";
 import { useUpgradeDialog } from "@/components/UpgradeDialog";
 
@@ -31,6 +35,8 @@ function runTool({ canvasEditor, docEditor }: Editors, idMap: ShapeIdMap, toolNa
 }
 
 export function useWorkspaceAgentChat(workspaceId: string, editors: Editors) {
+  const { generation } = useWorkspaceSession();
+  const taskBatch = useRef("");
   const idMap = useRef<ShapeIdMap>(new Map());
   const placement = useRef<DrawingPlacement>(createDrawingPlacement());
   const openUpgrade = useUpgradeDialog();
@@ -70,8 +76,20 @@ export function useWorkspaceAgentChat(workspaceId: string, editors: Editors) {
       refreshPromptUsage();
       openUpgrade(UPGRADE_REASONS.prompts);
     },
-    onToolCall: ({ toolCall }) => {
-      const output = runTool(editorsRef.current, idMap.current, toolCall.toolName, toolCall.input, placement.current);
+    onToolCall: async ({ toolCall }) => {
+      let taskOutput: ToolResult | undefined;
+      try {
+        if (toolCall.toolName === "createTask") {
+          const input = taskToolDefs.createTask.inputSchema.parse(toolCall.input);
+          await createWorkspaceTask(workspaceId, { title: input.title, description: input.description, phase: input.phase, sourceKey: `${taskBatch.current}:${input.id}` }, generation);
+          taskOutput = { success: true };
+        } else if (toolCall.toolName === "updateTaskStatus") {
+          const input = taskToolDefs.updateTaskStatus.inputSchema.parse(toolCall.input);
+          await updateWorkspaceTask(workspaceId, input.taskId, input.status, generation);
+          taskOutput = { success: true };
+        }
+      } catch (error) { taskOutput = fail(error instanceof Error ? error.message : "Task action failed"); }
+      const output = taskOutput ?? runTool(editorsRef.current, idMap.current, toolCall.toolName, toolCall.input, placement.current);
       // Not awaited: the SDK checks for the automatic resubmit right after this callback returns.
       chat.addToolOutput({
         tool: toolCall.toolName as keyof typeof agentToolDefs,
@@ -81,7 +99,15 @@ export function useWorkspaceAgentChat(workspaceId: string, editors: Editors) {
     },
   });
 
-  const sendMessage: typeof chat.sendMessage = (...args) => {
+  const sendMessage: typeof chat.sendMessage = async (...args) => {
+    try {
+      await flushWorkspace(workspaceId);
+      await createWorkspaceSnapshot(workspaceId, "Before AI changes", generation);
+    } catch {
+      toast.error("Reconnect and finish saving before asking the agent to change your workspace.");
+      return;
+    }
+    taskBatch.current = crypto.randomUUID();
     placement.current = createDrawingPlacement();
     idMap.current.clear();
     return chat.sendMessage(...args);

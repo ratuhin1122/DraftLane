@@ -3,7 +3,7 @@ import type { Prisma } from "@/lib/generated/prisma/client";
 
 // The active org's workspaces, or the user's personal ones when no org is selected.
 export function scopeWhere(orgId: string | null | undefined, userId: string): Prisma.WorkspaceWhereInput {
-  return orgId ? { clerkOrgId: orgId } : { clerkOrgId: null, creatorId: userId };
+  return orgId ? { OR: [{ clerkOrgId: orgId }, { members: { some: { userId } } }] } : { OR: [{ clerkOrgId: null, creatorId: userId }, { members: { some: { userId } } }] };
 }
 
 // What the dashboard and the board list, plus the name to show above it.

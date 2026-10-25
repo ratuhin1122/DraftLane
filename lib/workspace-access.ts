@@ -1,23 +1,32 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
-import { workspaceOwnerSelect } from "@/lib/billing";
+import { permits, type WorkspaceRole, type WorkspaceCapability } from "@/lib/workspace-permissions";
 
-// Org workspaces are open to every member of that org; personal (org-less) ones only to their creator.
-export async function canAccessWorkspace(workspaceId: string) {
-  const { userId, orgId } = await auth();
-  if (!userId) return false;
-
-  const workspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
-    select: workspaceOwnerSelect,
-  });
-  if (!workspace) return false;
-
-  if (!workspace.clerkOrgId) return workspace.creator.clerkId === userId;
-  if (workspace.clerkOrgId === orgId) return true;
-
-  // The session only knows the active org, so check full membership for links into another org.
+export async function getWorkspaceRole(workspaceId: string): Promise<WorkspaceRole | null> {
+  const { userId, orgId, orgRole } = await auth();
+  if (!userId) return null;
+  if (!(await prisma.user.findUnique({ where: { clerkId: userId }, select: { id: true } }))) return null;
+  if (await prisma.accountDeletion.findUnique({ where: { clerkId: userId } })) return null;
+  const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: {
+    creator: { select: { clerkId: true } }, clerkOrgId: true,
+    members: { where: { user: { clerkId: userId } }, select: { role: true } },
+  } });
+  if (!workspace) return null;
+  if (workspace.creator.clerkId === userId) return "MANAGER";
+  if (workspace.clerkOrgId === orgId && orgRole === "org:admin") return "MANAGER";
+  const explicit = workspace.members[0]?.role;
+  if (explicit && ["VIEWER", "COMMENTER", "EDITOR"].includes(explicit)) return explicit as WorkspaceRole;
+  if (!workspace.clerkOrgId) return null;
+  if (workspace.clerkOrgId === orgId) return orgRole === "org:viewer" ? "VIEWER" : "EDITOR";
   const clerk = await clerkClient();
-  const { data: memberships } = await clerk.users.getOrganizationMembershipList({ userId, limit: 100 });
-  return memberships.some((m) => m.organization.id === workspace.clerkOrgId);
+  for (let offset = 0; ; offset += 100) {
+    const { data, totalCount } = await clerk.users.getOrganizationMembershipList({ userId, limit: 100, offset });
+    const membership = data.find((m) => m.organization.id === workspace.clerkOrgId);
+    if (membership) return membership.role === "org:admin" ? "MANAGER" : membership.role === "org:viewer" ? "VIEWER" : "EDITOR";
+    if (offset + data.length >= totalCount || !data.length) break;
+  }
+  return null;
+}
+export async function canAccessWorkspace(workspaceId: string, capability: WorkspaceCapability = "view") {
+  return permits(await getWorkspaceRole(workspaceId), capability);
 }

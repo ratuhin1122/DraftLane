@@ -3,6 +3,8 @@ import Link from "next/link";
 import { KanbanSquare, Plus } from "lucide-react";
 import { compareDesc } from "date-fns";
 import { checkUser } from "@/actions/check-user";
+import { getWorkspaceRole } from "@/lib/workspace-access";
+import { permits } from "@/lib/workspace-permissions";
 import { prisma } from "@/lib/prisma";
 import { getWorkspaceScope } from "@/lib/workspace-scope";
 import { withLastActivity, workspaceCardSelect } from "@/lib/workspace-status";
@@ -19,10 +21,11 @@ export default async function DashboardPage() {
 
   const { orgName, where } = await getWorkspaceScope(user.id);
   const workspaces = await prisma.workspace.findMany({ where, select: workspaceCardSelect });
-  const recent = workspaces
+  const recentList = workspaces
     .map(withLastActivity)
     .sort((a, b) => compareDesc(a.lastActivity, b.lastActivity))
     .slice(0, RECENT_COUNT);
+  const recent = await Promise.all(recentList.map(async workspace => { const role = await getWorkspaceRole(workspace.id); return { ...workspace, canEdit: permits(role, "edit"), canDelete: permits(role, "manage") }; }));
 
   return (
     <div className="min-w-0 p-4 sm:p-6 lg:p-8">

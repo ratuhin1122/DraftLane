@@ -110,14 +110,14 @@ export function WorkspaceBoard({ workspaces }: { workspaces: BoardWorkspace[] })
                     }`}
                   >
                     {columnWorkspaces.map((workspace, index) => (
-                      <Draggable key={workspace.id} draggableId={workspace.id} index={index}>
+                      <Draggable key={workspace.id} draggableId={workspace.id} isDragDisabled={!workspace.canEdit} index={index}>
                         {(provided, snapshot) => (
                           <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
                             <WorkspaceCard
                               workspace={workspace}
                               highlighted={snapshot.isDragging}
                               actions={
-                                <DropdownMenu>
+                                (workspace.canEdit || workspace.canDelete) && <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button
                                       variant="ghost"
@@ -129,14 +129,14 @@ export function WorkspaceBoard({ workspaces }: { workspaces: BoardWorkspace[] })
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onSelect={() => openFor(workspace, "edit")}>
+                                    {workspace.canEdit && <DropdownMenuItem onSelect={() => openFor(workspace, "edit")}>
                                       <Pencil className="size-4" />
                                       Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem variant="destructive" onSelect={() => openFor(workspace, "delete")}>
+                                    </DropdownMenuItem>}
+                                    {workspace.canDelete && <DropdownMenuItem variant="destructive" onSelect={() => openFor(workspace, "delete")}>
                                       <Trash2 className="size-4" />
                                       Delete
-                                    </DropdownMenuItem>
+                                    </DropdownMenuItem>}
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               }

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 import { checkUser } from "@/actions/check-user";
+import { getWorkspaceRole } from "@/lib/workspace-access";
+import { permits } from "@/lib/workspace-permissions";
 import { prisma } from "@/lib/prisma";
 import { getWorkspaceScope } from "@/lib/workspace-scope";
 import { withLastActivity, workspaceCardSelect } from "@/lib/workspace-status";
@@ -18,6 +20,8 @@ export default async function WorkspacesPage() {
     select: { ...workspaceCardSelect, position: true },
     orderBy: { position: "asc" },
   });
+
+  const cards = await Promise.all(workspaces.map(async workspace => { const role = await getWorkspaceRole(workspace.id); return { ...withLastActivity(workspace), canEdit: permits(role, "edit"), canDelete: permits(role, "manage") }; }));
 
   return (
     <div className="min-w-0 p-4 sm:p-6 lg:p-8">
@@ -41,7 +45,7 @@ export default async function WorkspacesPage() {
           No workspaces yet. Start one from the dashboard or with New workspace.
         </p>
       ) : (
-        <WorkspaceBoard workspaces={workspaces.map(withLastActivity)} />
+        <WorkspaceBoard workspaces={cards} />
       )}
     </div>
   );

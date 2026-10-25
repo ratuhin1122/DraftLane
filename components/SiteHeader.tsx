@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Show, SignInButton, SignUpButton, UserButton, OrganizationSwitcher } from "@clerk/nextjs";
+import { Show, SignInButton, SignUpButton, OrganizationSwitcher } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
+import { AccountMenu } from "@/components/AccountMenu";
 import { PlanButton } from "@/components/PlanButton";
 
 // Shared across every route (root layout). The landing page gets its section links and a way into
@@ -49,7 +50,7 @@ export function SiteHeader() {
           ) : (
             <PlanButton />
           )}
-          <UserButton />
+          <AccountMenu />
         </Show>
       </div>
     </header>

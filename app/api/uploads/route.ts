@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, unlink } from "node:fs/promises";
 import path from "node:path";
+import { prisma } from "@/lib/prisma";
+import { lockAccount } from "@/lib/account-deletion";
 import { auth } from "@clerk/nextjs/server";
 import { canAccessWorkspace } from "@/lib/workspace-access";
 
@@ -20,7 +22,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid upload." }, { status: 400 });
   }
   const workspaceId = form.get("workspaceId");
-  if (typeof workspaceId !== "string" || !(await canAccessWorkspace(workspaceId))) {
+  if (typeof workspaceId !== "string" || !(await canAccessWorkspace(workspaceId, "edit"))) {
     return Response.json({ error: "Workspace access required." }, { status: 403 });
   }
   const file = form.get("file");
@@ -42,5 +44,16 @@ export async function POST(request: Request) {
   await mkdir(directory, { recursive: true });
   const filename = `${randomUUID()}.${extension}`;
   await writeFile(path.join(directory, filename), bytes, { flag: "wx" });
+  try {
+    await prisma.$transaction(async tx => {
+      await lockAccount(tx, userId);
+      if (await tx.accountDeletion.findUnique({ where: { clerkId: userId } })) throw new Error("Account is being deleted");
+      if (!(await tx.user.findUnique({ where: { clerkId: userId }, select: { id: true } }))) throw new Error("Account not found");
+      await tx.uploadedAsset.create({ data: { filename, ownerClerkId: userId } });
+    });
+  } catch {
+    await unlink(path.join(directory, filename)).catch(() => {});
+    return Response.json({ error: "Upload could not be saved." }, { status: 503 });
+  }
   return Response.json({ url: `/uploads/${filename}` }, { status: 201 });
 }
