@@ -58,9 +58,9 @@
   --card-foreground: oklch(0.97 0.002 285);
   --popover: oklch(0.18 0.005 285);
   --popover-foreground: oklch(0.97 0.002 285);
-  /* Mint accent — DraftLane brand color */
+  /* Mint accent shared with the DraftLane monogram */
   --primary: oklch(0.80 0.13 170);
-  --primary-foreground: oklch(0.17 0.03 185);
+  --primary-foreground: oklch(0.16 0.03 185);
   --secondary: oklch(0.24 0.006 285);
   --secondary-foreground: oklch(0.97 0.002 285);
   --muted: oklch(0.22 0.006 285);
@@ -72,7 +72,7 @@
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.80 0.13 170 / 50%);
   --chart-1: oklch(0.80 0.13 170);
-  --chart-2: oklch(0.6 0.14 40);
+  --chart-2: oklch(0.65 0.12 190);
   --chart-3: oklch(0.5 0.02 285);
   --chart-4: oklch(0.4 0.01 285);
   --chart-5: oklch(0.3 0.01 285);
@@ -80,7 +80,7 @@
   --sidebar: oklch(0.15 0.004 285);
   --sidebar-foreground: oklch(0.97 0.002 285);
   --sidebar-primary: oklch(0.80 0.13 170);
-  --sidebar-primary-foreground: oklch(0.17 0.03 185);
+  --sidebar-primary-foreground: oklch(0.16 0.03 185);
   --sidebar-accent: oklch(0.22 0.006 285);
   --sidebar-accent-foreground: oklch(0.97 0.002 285);
   --sidebar-border: oklch(1 0 0 / 10%);
@@ -112,23 +112,36 @@
   }
 }
 
-/* DraftLane drafting grid: quiet structure around open-ended ideas. */
+/* Topographic contours (public/textures/topo.svg): DraftLane's background identity, a nod to
+   mapping unknown territory. Opt-in per section, never over the doc or canvas editors.
+   The SVG is used as a mask over a color gradient, so lines glow mint at the center and cool to grey
+   at the edges; a second mask layer fades the whole map out softly. */
 @utility topo-bg {
   position: relative;
   isolation: isolate;
+
   &::before {
     content: "";
     position: absolute;
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background-image: linear-gradient(oklch(0.80 0.13 170 / 0.07) 1px, transparent 1px), linear-gradient(90deg, oklch(0.80 0.13 170 / 0.07) 1px, transparent 1px), radial-gradient(ellipse at 50% 20%, oklch(0.80 0.13 170 / 0.09), transparent 65%);
-    background-size: 48px 48px, 48px 48px, 100% 100%;
-    mask-image: linear-gradient(black, transparent);
+    background: radial-gradient(ellipse 40% 50% at 50% 42%,
+        oklch(0.82 0.13 170),
+        oklch(0.80 0.13 170 / 0.55) 45%,
+        oklch(1 0 0 / 0.45) 75%);
+    mask-image:
+      url("/textures/topo.svg"),
+      radial-gradient(ellipse 75% 70% at 50% 45%, black 30%, transparent 85%);
+    mask-size: cover, 100% 100%;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-composite: intersect;
+    opacity: 0.55;
   }
 }
 
-/* Registration marks: small amber corner ticks just outside an element, like the crop marks on a
+/* Registration marks: small mint corner ticks just outside an element, like the crop marks on a
    printed map sheet. Put it on a wrapper, since an overflow-hidden element would clip them. */
 @utility survey-frame {
   position: relative;
@@ -174,4 +187,58 @@
       animation-range: 0 500px;
     }
   }
+}
+/* The hero contour pattern follows every route; editor surfaces stay opaque and readable. */
+.site-backdrop { isolation: isolate; }
+.site-backdrop::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 30%, oklch(0.80 0.13 170 / 0.28), oklch(0.80 0.13 170 / 0.07) 65%, transparent);
+  mask-image: url("/textures/topo.svg");
+  mask-size: cover;
+  mask-position: center;
+  opacity: 0.5;
+}
+
+@keyframes demo-appear {
+  0%, 8% { opacity: 0; transform: translateY(5px); }
+  20%, 82% { opacity: 1; transform: translateY(0); }
+  96%, 100% { opacity: 0; transform: translateY(0); }
+}
+@keyframes demo-draw {
+  0%, 20% { stroke-dashoffset: 100; opacity: 0; }
+  45%, 82% { stroke-dashoffset: 0; opacity: 1; }
+  96%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes demo-write {
+  0%, 10% { clip-path: inset(0 100% 0 0); opacity: 0.35; }
+  35%, 82% { clip-path: inset(0 0 0 0); opacity: 1; }
+  96%, 100% { clip-path: inset(0 0 0 0); opacity: 0.35; }
+}
+@keyframes demo-card-move {
+  0%, 15% { transform: translate(0, 0); box-shadow: none; }
+  30%, 48% { transform: translate(12px, -8px) rotate(3deg); box-shadow: 0 8px 24px oklch(0.80 0.13 170 / 0.2); border-color: var(--primary); }
+  65%, 100% { transform: translate(0, 0); box-shadow: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .canvas-demo > rect, .canvas-demo > text { animation: demo-appear 8s ease both infinite; }
+  .canvas-demo > rect:nth-of-type(2), .canvas-demo > text:nth-of-type(2) { animation-delay: 0.8s; }
+  .canvas-demo > rect:nth-of-type(3), .canvas-demo > text:nth-of-type(3) { animation-delay: 1.6s; }
+  .canvas-demo > line, .canvas-demo > path { stroke-dasharray: 100; animation: demo-draw 8s ease both infinite; }
+  .canvas-demo > path { animation-delay: 1.2s; }
+  .docs-demo > div { animation: demo-write 9s ease both infinite; }
+  .docs-demo > div:nth-child(2) { animation-delay: 0.4s; }
+  .docs-demo > div:nth-child(3) { animation-delay: 0.8s; }
+  .docs-demo > div:nth-child(4) { animation-delay: 1.2s; }
+  .docs-demo > div:nth-child(5) { animation-delay: 1.6s; }
+  .docs-demo > div:nth-child(6) { animation-delay: 2s; }
+  .docs-demo > div:nth-child(7) { animation-delay: 2.4s; }
+  .board-demo .demo-card { animation: demo-appear 9s ease both infinite; }
+  .board-demo > div:nth-child(2) .demo-card { animation-delay: 0.6s; }
+  .board-demo > div:nth-child(3) .demo-card { animation-delay: 1.2s; }
+  .board-demo > div:nth-child(4) .demo-card { animation-delay: 1.8s; }
+  .board-demo > div:first-child .demo-card:first-of-type { animation: demo-card-move 9s ease infinite; }
 }

@@ -1,10 +1,9 @@
-// Static mock UIs for the landing page's "three surfaces" section — not interactive,
-// just enough visual detail to read as a real product screen rather than an empty box.
+// Animated previews of the three workspace surfaces. Reduced motion is handled in CSS.
 
 export function CanvasMock() {
   return (
     <Frame>
-      <svg viewBox="0 0 100 62.5" className="h-full w-full">
+      <svg viewBox="0 0 100 62.5" role="img" aria-label="Animated onboarding flow being drawn on the canvas" className="canvas-demo h-full w-full">
         <defs>
           <marker id="mockArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
             <path d="M0,0 L6,3 L0,6 Z" fill="oklch(0.80 0.13 170)" />
@@ -32,7 +31,7 @@ export function CanvasMock() {
 export function DocsMock() {
   return (
     <Frame>
-      <div className="flex h-full flex-col gap-2.5 p-5">
+      <div aria-label="Animated document draft" className="docs-demo flex h-full flex-col gap-2.5 p-5">
         <div className="h-3 w-2/5 rounded bg-white/20" />
         <div className="h-2 w-full rounded bg-white/8" />
         <div className="h-2 w-11/12 rounded bg-white/8" />
@@ -62,12 +61,12 @@ export function BoardMock() {
   ];
   return (
     <Frame>
-      <div className="grid h-full grid-cols-4 gap-2 p-4">
+      <div aria-label="Animated team workflow board" className="board-demo grid h-full grid-cols-4 gap-2 p-4">
         {columns.map((col) => (
           <div key={col.title} className="flex flex-col gap-2 rounded-lg bg-white/3 p-2">
             <span className="text-[9px] font-medium whitespace-nowrap text-muted-foreground">{col.title}</span>
             {col.cards.map((card, i) => (
-              <div key={i} className="flex h-12 flex-col gap-1.5 rounded-md border border-white/10 bg-white/6 p-2">
+              <div key={i} className="demo-card flex h-12 flex-col gap-1.5 rounded-md border border-white/10 bg-white/6 p-2">
                 <div className="h-1.5 w-3/4 rounded bg-white/20" />
                 <div className="h-1 w-full rounded bg-white/8" />
                 {card.live && <span className={`mt-auto size-2 self-end rounded-full ${card.live}`} />}

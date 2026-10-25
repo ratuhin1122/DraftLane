@@ -59,7 +59,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         lang="en"
         className={`dark ${geistSans.variable} ${geistMono.variable} ${bricolage.variable} h-full antialiased`}
       >
-        <body className="min-h-full flex flex-col">
+        <body className="site-backdrop min-h-full flex flex-col">
           <TooltipProvider>
             <UpgradeDialogProvider>
               <AppShell>{children}</AppShell>
