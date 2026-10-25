@@ -1,4 +1,5 @@
 import {
+  Box,
   createShapeId,
   toRichText,
   type Editor,
@@ -12,13 +13,28 @@ import { canvasToolDefs, fail, normalizeModelText, ok, type ToolResult } from "@
 
 // Maps the model's caller-assigned ids ("rect-1") to real tldraw ids, so later calls in the same
 // chat can reference shapes it just created. Pre-existing shapes are referenced by their real ids.
+import { reservedDrawingEdge, drawingShift } from "@/lib/agent-placement";
+
 export type ShapeIdMap = Map<string, TLShapeId>;
+
+export type DrawingPlacement = { ids: Set<TLShapeId>; offsetX: number; initialized: boolean };
+export function createDrawingPlacement(): DrawingPlacement {
+  return { ids: new Set(), offsetX: 0, initialized: false };
+}
+
+export function focusDrawing(editor: Editor, placement: DrawingPlacement) {
+  const bounds = [...placement.ids].flatMap((id) => { const b = editor.getShapePageBounds(id); return b ? [b] : []; });
+  if (bounds.length) editor.zoomToBounds(Box.Common(bounds), { animation: { duration: 200 }, inset: 80 });
+}
 
 // Compact state sent with every request, so the model only references shapes that exist.
 export function summarizeCanvas(editor: Editor) {
   const shapes = editor.getCurrentPageShapes();
   if (shapes.length === 0) return "(empty canvas)";
-  return shapes.map(summarizeShape).join("\n");
+  return shapes.map((shape) => {
+    const bounds = editor.getShapePageBounds(shape);
+    return summarizeShape(shape) + (bounds ? `, bounds: (${Math.round(bounds.x)}, ${Math.round(bounds.y)}, ${Math.round(bounds.w)}, ${Math.round(bounds.h)})` : "");
+  }).join("\n");
 }
 
 function summarizeShape(shape: TLShape) {
@@ -106,7 +122,43 @@ function fontSizeToStyle(px: number) {
   return "xl";
 }
 
-export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: string, rawInput: unknown): ToolResult {
+export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: string, rawInput: unknown, placement?: DrawingPlacement): ToolResult {
+  const createsPositionedShape = ["createRectangle", "createEllipse", "createText", "createEntityTable"].includes(toolName);
+  let input = rawInput;
+  if (placement && createsPositionedShape && rawInput && typeof rawInput === "object" && "position" in rawInput) {
+    const point = rawInput.position as { x: number; y: number };
+    if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+      if (!placement.initialized) {
+        const existing = editor.getCurrentPageShapes().flatMap((shape) => { const b = editor.getShapePageBounds(shape); return b ? [b] : []; });
+        const edge = reservedDrawingEdge(existing);
+        placement.offsetX = edge === null ? 0 : edge - point.x;
+        placement.initialized = true;
+      }
+      input = { ...rawInput, position: { x: point.x + placement.offsetX, y: point.y } };
+    }
+  }
+  const result = executeCanvasToolInner(editor, idMap, toolName, input);
+  if (placement && result.success) {
+    if (toolName.startsWith("create") || toolName === "connectRelationship") {
+      const callerId = (rawInput as { id?: string })?.id;
+      const id = callerId ? idMap.get(callerId) : undefined;
+      if (id) placement.ids.add(id);
+    }
+    // Enforce the empty-area boundary using actual rendered bounds, including large text
+    // and growing ERD tables. Move only this task's shapes; bound arrows follow them.
+    const existing = editor.getCurrentPageShapes().filter((shape) => !placement.ids.has(shape.id));
+    const edge = reservedDrawingEdge(existing.flatMap((shape) => { const b = editor.getShapePageBounds(shape); return b ? [b] : []; }));
+    const own = [...placement.ids].flatMap((id) => { const shape = editor.getShape(id); return shape && shape.type !== "arrow" ? [shape] : []; });
+    const delta = drawingShift(edge, own.flatMap((shape) => { const b = editor.getShapePageBounds(shape); return b ? [b] : []; }));
+    if (delta) {
+      editor.updateShapes(own.map((shape) => ({ id: shape.id, type: shape.type, x: shape.x + delta })));
+      placement.offsetX += delta;
+    }
+  }
+  return result;
+}
+
+function executeCanvasToolInner(editor: Editor, idMap: ShapeIdMap, toolName: string, rawInput: unknown): ToolResult {
   const defs = canvasToolDefs;
   switch (toolName) {
     case "createRectangle":

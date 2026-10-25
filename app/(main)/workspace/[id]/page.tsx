@@ -44,7 +44,7 @@ export default async function WorkspacePage({
       shareToken: true,
       ...workspaceOwnerSelect,
       doc: { select: { content: true, yjsState: true } },
-      canvas: { select: { content: true } },
+      canvas: { select: { content: true, updatedAt: true } },
     },
   });
   if (!workspace) notFound();
@@ -84,7 +84,7 @@ export default async function WorkspacePage({
                 size="sm"
                 className="capitalize"
               >
-                <Link href={mode === "both" ? `/workspace/${id}` : `/workspace/${id}?view=${mode}`}>
+                <Link prefetch={false} href={mode === "both" ? `/workspace/${id}` : `/workspace/${id}?view=${mode}`}>
                   {mode === "doc" ? "Document" : mode}
                 </Link>
               </Button>
@@ -104,10 +104,9 @@ export default async function WorkspacePage({
           </div>
         </header>
 
-        {/* key gives each view a fresh panel group, so an old layout isn't applied to new panels */}
-        <ResizablePanelGroup key={view} orientation="horizontal" className="flex-1">
-          {showDoc && (
-            <ResizablePanel defaultSize={35} minSize={20}>
+        {/* Keep both editors mounted when switching views so unsaved state survives. */}
+        <ResizablePanelGroup orientation="horizontal" className="flex-1">
+          <ResizablePanel defaultSize={35} minSize={20} className={showDoc ? "" : "hidden"}>
               <DocEditor
                 key={id}
                 workspaceId={id}
@@ -116,17 +115,16 @@ export default async function WorkspacePage({
                   workspace.doc?.yjsState ? Buffer.from(workspace.doc.yjsState).toString("base64") : null
                 }
               />
-            </ResizablePanel>
-          )}
-          {showDoc && showCanvas && <ResizableHandle withHandle />}
-          {showCanvas && (
-            <ResizablePanel defaultSize={75} minSize={20}>
+          </ResizablePanel>
+          <ResizableHandle withHandle className={showDoc && showCanvas ? "" : "hidden"} />
+          <ResizablePanel defaultSize={75} minSize={20} className={showCanvas ? "" : "hidden"}>
               <CanvasEditor
+                key={id}
                 workspaceId={id}
                 initialSnapshot={workspace.canvas?.content as TLEditorSnapshot | null}
+                initialSavedAt={workspace.canvas?.updatedAt.getTime() ?? 0}
               />
-            </ResizablePanel>
-          )}
+          </ResizablePanel>
         </ResizablePanelGroup>
       </div>
     </WorkspaceEditorsProvider>

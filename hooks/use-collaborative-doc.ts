@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import * as Y from "yjs";
 import { SupabaseYjsProvider } from "@/lib/supabase-yjs-provider";
+import { readDocDraft } from "@/lib/workspace-draft";
 import { fromBase64 } from "@/lib/base64";
 
 // Creates the shared Yjs doc for a workspace and connects it to Realtime. Returns null until
@@ -16,6 +17,8 @@ export function useCollaborativeDoc(workspaceId: string, initialState: string | 
   useEffect(() => {
     const doc = new Y.Doc();
     if (savedState) Y.applyUpdate(doc, fromBase64(savedState));
+    const draft = readDocDraft(workspaceId);
+    if (draft) Y.applyUpdate(doc, fromBase64(draft));
     const provider = new SupabaseYjsProvider(doc, workspaceId, () => setCollab({ doc, provider }));
 
     return () => {

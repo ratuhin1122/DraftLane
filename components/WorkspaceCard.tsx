@@ -37,6 +37,7 @@ export function WorkspaceCard({
       {/* after:inset-0 stretches the link over the whole card, so `actions` can sit on top
           without being nested inside the link. */}
       <Link
+        prefetch={false}
         href={`/workspace/${workspace.id}`}
         draggable={false}
         className="line-clamp-2 pr-7 text-sm leading-snug font-medium after:absolute after:inset-0"

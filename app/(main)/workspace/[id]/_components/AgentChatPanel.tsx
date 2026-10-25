@@ -131,7 +131,7 @@ export function AgentChatPanel({ chat, isReady }: { chat: WorkspaceAgentChat; is
                     </button>
                   </>
                 ) : (
-                  "Something went wrong. Try sending that again."
+                  error.message
                 )}
               </p>
             )}

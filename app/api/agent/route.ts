@@ -25,6 +25,8 @@ Canvas rules:
 - For entity-relationship diagrams, use the ERD tools (createEntityTable, addColumn, updateColumn, removeColumn, connectRelationship), not rectangles.
 - Reference only shape ids listed in the current canvas state or created earlier in this turn. Never invent an id.
 
+For a new diagram, preserve existing shapes. Do not update or delete them unless the user explicitly asks to edit them. New shape positions are task-relative: lay out the diagram near (0,0); the canvas executor shifts the entire new drawing to an empty area with a safety margin. For updateShape, use absolute canvas coordinates.
+
 Canvas layout rules: diagrams must never look cluttered or have overlapping shapes. The canvas is infinite, so spread out as far as needed instead of packing shapes near (0,0).
 - Size each box to its label (a short label like "Start" might be 140x80; a label needing 2-3 lines might be 260x140), and compute spacing from actual sizes.
 - Vertical gap between stacked boxes: at least 100px of empty space (next y >= previous y + previous height + 100).
@@ -53,6 +55,10 @@ export async function POST(req: Request) {
 
   if (!(await canAccessWorkspace(workspaceId))) return new Response("Workspace not found", { status: 404 });
 
+  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim()) {
+    return new Response("The AI agent is not configured. Add GOOGLE_GENERATIVE_AI_API_KEY to .env.local and restart the server.", { status: 503 });
+  }
+
   // Only a message the user typed counts as a prompt; the automatic follow-ups after tool calls
   // end with the agent's own message, so a prompt that draws 20 shapes still counts once.
   let ownerId: string | null = null;
@@ -64,7 +70,7 @@ export async function POST(req: Request) {
   }
 
   const result = streamText({
-    model: google("gemini-3.5-flash-lite"),
+    model: google(process.env.GOOGLE_GENERATIVE_AI_MODEL || "gemini-3.5-flash-lite"),
     system: `${SYSTEM_PROMPT}\n\nCurrent canvas state:\n${canvasContext ?? NOT_OPEN}\n\nCurrent doc state:\n${docContext ?? NOT_OPEN}`,
     // No `execute` on any tool: they run in the browser against the live canvas and doc editors
     // (see hooks/use-workspace-agent-chat.ts), since that's where the real state lives.
@@ -79,5 +85,14 @@ export async function POST(req: Request) {
     },
   });
 
-  return result.toUIMessageStreamResponse({ sendReasoning: true });
+  return result.toUIMessageStreamResponse({
+    sendReasoning: true,
+    onError: (error) => {
+      const status = error && typeof error === "object" && "statusCode" in error ? error.statusCode : undefined;
+      if (status === 429) return "Gemini is rate limited or its quota is exhausted. Try again shortly or check your Google AI quota.";
+      if (status === 401 || status === 403) return "Gemini rejected the API key. Check its permissions in Google AI Studio.";
+      if (status === 404) return "The configured Gemini model is unavailable. Check GOOGLE_GENERATIVE_AI_MODEL.";
+      return "The agent could not reach Gemini. Please try again shortly.";
+    },
+  });
 }

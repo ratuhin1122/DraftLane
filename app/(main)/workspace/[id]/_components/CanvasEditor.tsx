@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
   Tldraw,
+  useTLStore,
   atom,
   computed,
   createTLCurrentUser,
@@ -20,6 +21,7 @@ import {
   type TLComponents,
 } from "tldraw";
 import { useSync } from "@tldraw/sync";
+import { toast } from "sonner";
 import "tldraw/tldraw.css";
 import { saveCanvasContent } from "@/actions/canvas";
 import type { Prisma } from "@/lib/generated/prisma/client";
@@ -27,15 +29,16 @@ import { EntityTableShapeUtil } from "@/components/EntityTable/EntityTableShapeU
 import { AddEntityTableButton } from "@/components/EntityTable/AddEntityTableButton";
 import { snapArrowBindingToRow } from "@/components/EntityTable/snapArrowToRow";
 import { useWorkspaceEditors } from "@/components/WorkspaceEditorsContext";
+import { readCanvasDraft, writeCanvasDraft } from "@/lib/workspace-draft";
 import { colorForUser } from "@/lib/utils";
 
 const SAVE_DEBOUNCE_MS = 1000;
 
 const shapeUtils = [EntityTableShapeUtil];
 
-// Our own sync server (the tldraw-sync/ Cloudflare Worker). Without it, tldraw's public demo
-// server is used: fine for trying things out, but rooms there are public and get wiped.
-const SYNC_URL = process.env.NEXT_PUBLIC_TLDRAW_SYNC_URL;
+// Use the configured sync worker when available. Local development uses a local store
+// with database autosave and browser draft recovery, without a temporary public room.
+const SYNC_URL = process.env.NEXT_PUBLIC_TLDRAW_SYNC_URL?.trim();
 
 // Unlike useSyncDemo, useSync doesn't add tldraw's built-in shapes itself. Built once here:
 // a new array on every render would make useSync rebuild the store in a loop.
@@ -43,8 +46,8 @@ const syncShapeUtils = [...defaultShapeUtils, ...shapeUtils];
 
 type SyncOptions = { roomId: string; workspaceId: string; users?: Parameters<typeof useSync>[0]["users"] };
 
-// Use our upload endpoint even when the room runs on the demo sync backend.
-function useCanvasSync({ roomId, workspaceId, users }: SyncOptions) {
+// Both local and collaborative canvases use our authenticated upload endpoint.
+function useWorkspaceAssets(workspaceId: string) {
   const assets = useMemo<TLAssetStore>(() => ({
     async upload(_asset, file) {
       const form = new FormData();
@@ -57,14 +60,26 @@ function useCanvasSync({ roomId, workspaceId, users }: SyncOptions) {
     },
     resolve(asset) { return asset.props.src ?? null; },
   }), [workspaceId]);
+  return assets;
+}
+
+function useRemoteCanvas({ roomId, workspaceId, users }: SyncOptions) {
+  const assets = useWorkspaceAssets(workspaceId);
   return useSync({
-    uri: `${SYNC_URL ?? "https://demo.tldraw.xyz"}/connect/${encodeURIComponent(roomId)}`,
+    uri: `${SYNC_URL}/connect/${encodeURIComponent(roomId)}`,
     assets,
     shapeUtils: syncShapeUtils,
     bindingUtils: defaultBindingUtils,
     users,
   });
 }
+
+function useLocalCanvas({ workspaceId }: SyncOptions) {
+  const assets = useWorkspaceAssets(workspaceId);
+  return useTLStore({ assets, shapeUtils: syncShapeUtils, bindingUtils: defaultBindingUtils });
+}
+
+const useCanvasSync = SYNC_URL ? useRemoteCanvas : useLocalCanvas;
 
 // A cleaner, single-page canvas: no style panel, page menu or main menu, and a vertical toolbar
 // on the left with our Add table button.
@@ -83,11 +98,12 @@ const components: TLComponents = {
 export function CanvasEditor({
   workspaceId,
   initialSnapshot,
+  initialSavedAt,
 }: {
   workspaceId: string;
   initialSnapshot: TLEditorSnapshot | null;
+  initialSavedAt: number;
 }) {
-  const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { setCanvasEditor } = useWorkspaceEditors();
   const { user } = useUser();
 
@@ -132,28 +148,40 @@ export function CanvasEditor({
     setCanvasEditor(editor);
     // Seed from Postgres only when the room is empty, so a joining user doesn't overwrite
     // what others have already drawn.
-    if (initialSnapshot && editor.getCurrentPageShapeIds().size === 0) {
-      editor.loadSnapshot(initialSnapshot);
+    const restored = readCanvasDraft(workspaceId, initialSavedAt) ?? initialSnapshot;
+    if (restored && editor.getCurrentPageShapeIds().size === 0) {
+      editor.loadSnapshot(restored);
     }
 
-    editor.store.listen(
-      () => {
-        if (saveTimeout.current) clearTimeout(saveTimeout.current);
-        saveTimeout.current = setTimeout(() => {
-          // getSnapshot() carries non-plain internals (schema is a class instance, not JSON) that
-          // occasionally fail to cross the Server Action boundary as "opaque temporary reference"
-          // errors — round-tripping through JSON strips those and leaves genuinely plain data.
-          const plainSnapshot = JSON.parse(
-            JSON.stringify(editor.getSnapshot())
-          ) as Prisma.InputJsonValue;
-          saveCanvasContent(workspaceId, plainSnapshot);
-        }, SAVE_DEBOUNCE_MS);
-      },
-      { source: "user", scope: "document" }
-    );
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    let pending: Prisma.InputJsonValue | undefined;
+    let queue = Promise.resolve();
+    const flush = () => {
+      clearTimeout(timeout);
+      timeout = undefined;
+      if (!pending) return;
+      const snapshot = pending;
+      pending = undefined;
+      queue = queue.then(() => saveCanvasContent(workspaceId, snapshot)).catch(() => {
+        toast.error("Canvas could not save. Please retry before leaving this workspace.");
+      });
+    };
+    const stopSaving = editor.store.listen(() => {
+      const snapshot = editor.getSnapshot();
+      writeCanvasDraft(workspaceId, snapshot);
+      pending = JSON.parse(JSON.stringify(snapshot)) as Prisma.InputJsonValue;
+      clearTimeout(timeout);
+      timeout = setTimeout(flush, SAVE_DEBOUNCE_MS);
+    }, { source: "user", scope: "document" });
+    if (readCanvasDraft(workspaceId, initialSavedAt)) {
+      pending = JSON.parse(JSON.stringify(editor.getSnapshot())) as Prisma.InputJsonValue;
+      flush();
+    }
+    const onPageHide = () => flush();
+    window.addEventListener("pagehide", onPageHide);
 
     // Arrows drawn onto an ERD table snap to the nearest row (see snapArrowToRow.ts).
-    editor.store.listen(
+    const stopSnapping = editor.store.listen(
       (entry) => {
         for (const record of Object.values(entry.changes.added)) {
           if (record.typeName === "binding" && record.type === "arrow") {
@@ -165,7 +193,13 @@ export function CanvasEditor({
     );
 
     // Clear it on unmount (e.g. switching to the Document view) so nothing keeps a disposed editor.
-    return () => setCanvasEditor(null);
+    return () => {
+      stopSaving();
+      stopSnapping();
+      window.removeEventListener("pagehide", onPageHide);
+      flush();
+      setCanvasEditor(null);
+    };
   };
 
   return (
