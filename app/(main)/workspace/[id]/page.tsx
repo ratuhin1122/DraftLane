@@ -13,11 +13,11 @@ import { AgentToggleButton } from "./_components/AgentToggleButton";
 import { ShareDialog } from "./_components/ShareDialog";
 import { getEntitlements, workspaceOwnerId, workspaceOwnerSelect } from "@/lib/billing";
 import { PlanButton } from "@/components/PlanButton";
+import { ResponsiveWorkspacePanels } from "@/components/ResponsiveWorkspacePanels";
 import { WorkspaceEditorsProvider } from "@/components/WorkspaceEditorsContext";
 import {
   ResizableHandle,
   ResizablePanel,
-  ResizablePanelGroup,
 } from "@/components/ui/resizable";
 
 type ViewMode = "doc" | "canvas" | "both";
@@ -58,11 +58,11 @@ export default async function WorkspacePage({
     <WorkspaceEditorsProvider>
       <div className="flex h-dvh flex-col overflow-hidden">
         {/* Logo (back to dashboard) and name left, view switcher centered, actions right. */}
-        <header className="flex h-14 shrink-0 items-center border-b border-white/6 bg-background px-4">
-          <div className="flex flex-1 items-center gap-3">
+        <header className="grid h-28 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 border-b border-white/6 bg-background px-3 lg:flex lg:h-14 lg:px-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2 lg:gap-3">
             <Link
               href="/dashboard"
-              className="flex size-8 items-center justify-center rounded-md transition-opacity hover:opacity-80"
+              className="flex size-8 shrink-0 items-center justify-center rounded-md transition-opacity hover:opacity-80"
             >
               <Image
                 src="/brand/mascot-dark.png"
@@ -75,14 +75,14 @@ export default async function WorkspacePage({
             <EditableWorkspaceName workspaceId={id} initialName={workspace.name} />
           </div>
 
-          <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/3 p-1">
+          <div className="order-3 col-span-2 mx-auto flex items-center gap-1 rounded-lg lg:order-none border border-white/10 bg-white/3 p-1">
             {(["doc", "both", "canvas"] as const).map((mode) => (
               <Button
                 key={mode}
                 asChild
                 variant={view === mode ? "secondary" : "ghost"}
                 size="sm"
-                className="capitalize"
+                className="h-10 px-5 capitalize lg:h-8 lg:px-3"
               >
                 <Link prefetch={false} href={mode === "both" ? `/workspace/${id}` : `/workspace/${id}?view=${mode}`}>
                   {mode === "doc" ? "Document" : mode}
@@ -91,8 +91,8 @@ export default async function WorkspacePage({
             ))}
           </div>
 
-          <div className="flex flex-1 items-center justify-end gap-2">
-            <PlanButton upgradeOnlyWhenOut />
+          <div className="flex min-w-0 items-center justify-end gap-1 sm:gap-2 lg:flex-1">
+            <div className="hidden sm:block"><PlanButton upgradeOnlyWhenOut /></div>
             <ShareDialog
               workspaceId={id}
               workspaceName={workspace.name}
@@ -105,8 +105,8 @@ export default async function WorkspacePage({
         </header>
 
         {/* Keep both editors mounted when switching views so unsaved state survives. */}
-        <ResizablePanelGroup orientation="horizontal" className="flex-1">
-          <ResizablePanel defaultSize={35} minSize={20} className={showDoc ? "" : "hidden"}>
+        <ResponsiveWorkspacePanels>
+          <ResizablePanel defaultSize="40%" minSize="20%" className={showDoc ? "" : "hidden"}>
               <DocEditor
                 key={id}
                 workspaceId={id}
@@ -117,7 +117,7 @@ export default async function WorkspacePage({
               />
           </ResizablePanel>
           <ResizableHandle withHandle className={showDoc && showCanvas ? "" : "hidden"} />
-          <ResizablePanel defaultSize={75} minSize={20} className={showCanvas ? "" : "hidden"}>
+          <ResizablePanel defaultSize="60%" minSize="20%" className={showCanvas ? "" : "hidden"}>
               <CanvasEditor
                 key={id}
                 workspaceId={id}
@@ -125,7 +125,7 @@ export default async function WorkspacePage({
                 initialSavedAt={workspace.canvas?.updatedAt.getTime() ?? 0}
               />
           </ResizablePanel>
-        </ResizablePanelGroup>
+        </ResponsiveWorkspacePanels>
       </div>
     </WorkspaceEditorsProvider>
   );

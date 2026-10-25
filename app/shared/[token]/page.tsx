@@ -9,7 +9,9 @@ import { getEntitlements, workspaceOwnerId, workspaceOwnerSelect } from "@/lib/b
 import { Badge } from "@/components/ui/badge";
 import { DocViewer } from "@/components/DocEditorLoader";
 import { CanvasViewer } from "./_components/CanvasViewer";
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { ResizableHandle, ResizablePanel } from "@/components/ui/resizable";
+
+import { ResponsiveWorkspacePanels } from "@/components/ResponsiveWorkspacePanels";
 
 // Shared links are private-by-obscurity, so keep them out of search engines.
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -34,26 +36,26 @@ export default async function SharedPage({ params }: PageProps<"/shared/[token]"
   return (
     <div className="flex h-dvh flex-col overflow-hidden">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-white/6 bg-background px-4">
-        <Link href="/" className="flex size-8 items-center justify-center rounded-md transition-opacity hover:opacity-80">
+        <Link href="/" className="flex size-8 shrink-0 items-center justify-center rounded-md transition-opacity hover:opacity-80">
           <Image src="/brand/mascot-dark.png" alt="DraftLane" width={24} height={24} className="size-6" />
         </Link>
-        <span className="text-sm font-medium">{workspace.name}</span>
-        <Badge variant="outline" className="border-white/15 text-xs font-normal text-muted-foreground">
+        <span className="min-w-0 flex-1 truncate text-sm font-medium">{workspace.name}</span>
+        <Badge variant="outline" className="shrink-0 border-white/15 text-xs font-normal text-muted-foreground">
           View only
         </Badge>
       </header>
 
-      <ResizablePanelGroup orientation="horizontal" className="flex-1">
-        <ResizablePanel defaultSize={40} minSize={20}>
+      <ResponsiveWorkspacePanels>
+        <ResizablePanel defaultSize="40%" minSize="20%">
           <div className="h-full overflow-y-auto pt-6">
             <DocViewer content={workspace.doc?.content as Block[] | null} />
           </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={60} minSize={20}>
+        <ResizablePanel defaultSize="60%" minSize="20%">
           <CanvasViewer snapshot={workspace.canvas?.content as TLEditorSnapshot | null} />
         </ResizablePanel>
-      </ResizablePanelGroup>
+      </ResponsiveWorkspacePanels>
     </div>
   );
 }

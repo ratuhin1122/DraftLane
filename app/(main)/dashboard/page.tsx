@@ -25,16 +25,16 @@ export default async function DashboardPage() {
     .slice(0, RECENT_COUNT);
 
   return (
-    <div className="p-8">
+    <div className="min-w-0 p-4 sm:p-6 lg:p-8">
       <DashboardPrompt />
 
       <section className="mx-auto max-w-6xl">
-        <div className="mb-4 flex items-end justify-between gap-4">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs text-muted-foreground">{orgName}</p>
             <h2 className="text-lg font-semibold">Recent workspaces</h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {workspaces.length > 0 && (
               <Button
                 asChild

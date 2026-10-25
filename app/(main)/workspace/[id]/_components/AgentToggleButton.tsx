@@ -32,16 +32,16 @@ export function AgentToggleButton({ workspaceId, initialPrompt }: { workspaceId:
 
   return (
     <>
-      <Button size="sm" className="gap-1.5" onClick={() => setIsOpen((v) => !v)}>
+      <Button size="sm" aria-label={isOpen ? "Close agent" : "Ask Agent"} className="h-9 gap-1.5 px-2 sm:px-3" onClick={() => setIsOpen((v) => !v)}>
         {isOpen ? (
           <>
             <X className="size-4" />
-            Close
+            <span className="hidden sm:inline">Close</span>
           </>
         ) : (
           <>
             <Image src="/brand/mascot.png" alt="" width={16} height={16} className="size-4" />
-            Ask Agent
+            <span className="hidden sm:inline">Ask Agent</span>
           </>
         )}
       </Button>

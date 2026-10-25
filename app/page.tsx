@@ -51,8 +51,8 @@ export default function Home() {
               aria-label="DraftLane walkthrough: the agent draws an architecture diagram and writes the spec"
               className="size-full object-cover"
             >
-              <source src="/videos/hero-mint.webm" type="video/webm" />
-              <source src="/videos/hero-mint.mp4" type="video/mp4" />
+              <source src="/videos/hero-mint.webm?v=trimmed" type="video/webm" />
+              <source src="/videos/hero-mint.mp4?v=trimmed" type="video/mp4" />
             </video>
           </div>
         </div>

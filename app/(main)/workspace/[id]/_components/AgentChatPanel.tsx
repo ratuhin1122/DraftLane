@@ -32,22 +32,22 @@ export function AgentChatPanel({ chat, isReady }: { chat: WorkspaceAgentChat; is
     // A resizable group of its own, laid over the workspace below the header, so opening the chat
     // doesn't resize the doc and canvas. The empty left panel lets clicks through to the editors;
     // only the handle and the chat itself take them. Sizes are in px.
-    <div className="pointer-events-none fixed inset-x-0 top-14 bottom-0 z-30">
+    <div className="pointer-events-none fixed inset-x-0 top-28 bottom-0 lg:top-14 z-30">
       <ResizablePanelGroup orientation="horizontal">
-        <ResizablePanel />
-        <ResizableHandle className="pointer-events-auto" />
+        <ResizablePanel className="hidden sm:block" />
+        <ResizableHandle className="pointer-events-auto hidden sm:flex" />
         <ResizablePanel
           defaultSize={360}
           minSize={280}
           maxSize={640}
-          className="pointer-events-auto flex flex-col border-l border-white/10 bg-card shadow-2xl"
+          className="pointer-events-auto flex min-w-0 flex-col border-l border-white/10 bg-card shadow-2xl"
         >
           <div className="flex h-14 shrink-0 items-center gap-2 border-b border-white/6 px-4 text-sm font-medium">
             <Image src="/brand/mascot-dark.png" alt="" width={18} height={18} className="size-4.5" />
             DraftLane Agent
           </div>
 
-          <div className="flex-1 space-y-3 overflow-y-auto p-4">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 sm:p-4">
             {messages.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Ask the agent to draw a diagram, write or edit the doc, or both. Say
@@ -57,7 +57,7 @@ export function AgentChatPanel({ chat, isReady }: { chat: WorkspaceAgentChat; is
               messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`max-w-[85%] space-y-1.5 rounded-lg px-3 py-2 text-sm ${
+                  className={`max-w-[92%] break-words [overflow-wrap:anywhere] sm:max-w-[85%] space-y-1.5 rounded-lg px-3 py-2 text-sm ${
                     message.role === "user"
                       ? "ml-auto bg-primary text-primary-foreground"
                       : "bg-white/5 text-foreground"
@@ -145,7 +145,7 @@ export function AgentChatPanel({ chat, isReady }: { chat: WorkspaceAgentChat; is
               placeholder="Ask the agent..."
               rows={1}
               disabled={!isReady}
-              className="max-h-32 flex-1 resize-none rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-ring disabled:opacity-50"
+              className="min-w-0 text-base sm:text-sm max-h-32 flex-1 resize-none rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-ring disabled:opacity-50"
             />
             <MicButton value={input} onChange={setInput} disabled={!isReady} />
             {isBusy ? (

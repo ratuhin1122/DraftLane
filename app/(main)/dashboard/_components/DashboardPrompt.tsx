@@ -49,8 +49,8 @@ export function DashboardPrompt() {
   };
 
   return (
-    <section className="topo-bg mx-auto mb-14 w-full max-w-4xl px-6 py-10 text-center">
-      <h2 className="text-3xl font-semibold tracking-tight md:text-4xl">What are we planning today?</h2>
+    <section className="topo-bg mx-auto mb-10 w-full max-w-4xl px-0 py-6 sm:mb-14 sm:px-6 sm:py-10 text-center">
+      <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">What are we planning today?</h2>
       <p className="mt-2 text-muted-foreground">Describe it, and the agent drafts the doc and the canvas for you.</p>
 
       <div className="mx-auto mt-7 max-w-3xl rounded-3xl border border-white/12 bg-card/80 p-3 text-left shadow-2xl shadow-black/40 backdrop-blur transition focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/10">
@@ -61,7 +61,6 @@ export function DashboardPrompt() {
           placeholder="e.g. Design the database for a food delivery app and document it"
           rows={2}
           disabled={busy}
-          autoFocus
           className="field-sizing-content max-h-60 min-h-14 w-full resize-none bg-transparent px-2 pt-1 text-base leading-6 outline-none placeholder:text-muted-foreground/70"
         />
         <div className="mt-1 flex items-center justify-between gap-2 pl-2">

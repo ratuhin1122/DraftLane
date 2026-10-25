@@ -242,3 +242,17 @@
   .board-demo > div:nth-child(4) .demo-card { animation-delay: 1.8s; }
   .board-demo > div:first-child .demo-card:first-of-type { animation: demo-card-move 9s ease infinite; }
 }
+
+/* Keep third-party auth cards, document media, and tables within narrow panels. */
+.auth-shell > div, .auth-shell .cl-rootBox, .auth-shell .cl-cardBox { max-width: 100%; }
+.bn-container { min-width: 0; }
+.bn-container .bn-visual-media { max-width: 100%; height: auto; }
+.bn-container .bn-table-wrapper { max-width: 100%; overflow-x: auto; }
+@media (max-width: 1023px) {
+  .bn-container .bn-editor { padding-inline: 32px; }
+}
+@media (max-width: 639px) {
+  .auth-shell .cl-card { padding: 24px 16px; }
+  .bn-container .bn-editor { padding-inline: 24px; }
+  input, textarea, select { font-size: 16px; }
+}

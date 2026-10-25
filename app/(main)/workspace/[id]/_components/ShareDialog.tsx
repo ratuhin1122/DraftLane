@@ -138,9 +138,9 @@ export function ShareDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button variant="outline" size="sm" aria-label="Share workspace" className="h-9 gap-1.5 px-2 sm:px-3">
           <Share2 className="size-4" />
-          Share
+          <span className="hidden sm:inline">Share</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
