@@ -2,11 +2,14 @@
   "name": "scaffold",
   "version": "0.1.0",
   "private": true,
+  "license": "GPL-3.0-only",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint",
+    "postinstall": "prisma generate",
+    "seed": "tsx --env-file=.env prisma/seed.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.67",
