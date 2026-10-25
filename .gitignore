@@ -49,3 +49,6 @@ supabase/.temp/
 
 # original video source (too large for git; encoded copies live in public/videos)
 /assets/source/*.mp4
+
+# Local workspace image uploads
+/public/uploads/

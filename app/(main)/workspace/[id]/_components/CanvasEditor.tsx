@@ -12,14 +12,14 @@ import {
   UserRecordType,
   DefaultToolbar,
   DefaultToolbarContent,
-  inlineBase64AssetStore,
+  type TLAssetStore,
   defaultShapeUtils,
   defaultBindingUtils,
   type Editor,
   type TLEditorSnapshot,
   type TLComponents,
 } from "tldraw";
-import { useSync, useSyncDemo } from "@tldraw/sync";
+import { useSync } from "@tldraw/sync";
 import "tldraw/tldraw.css";
 import { saveCanvasContent } from "@/actions/canvas";
 import type { Prisma } from "@/lib/generated/prisma/client";
@@ -41,19 +41,30 @@ const SYNC_URL = process.env.NEXT_PUBLIC_TLDRAW_SYNC_URL;
 // a new array on every render would make useSync rebuild the store in a loop.
 const syncShapeUtils = [...defaultShapeUtils, ...shapeUtils];
 
-type SyncOptions = { roomId: string; users?: Parameters<typeof useSyncDemo>[0]["users"] };
+type SyncOptions = { roomId: string; workspaceId: string; users?: Parameters<typeof useSync>[0]["users"] };
 
-// Chosen once at load, so it's always the same hook. Images are stored inside the room.
-const useCanvasSync = SYNC_URL
-  ? ({ roomId, users }: SyncOptions) =>
-      useSync({
-        uri: `${SYNC_URL}/connect/${roomId}`,
-        assets: inlineBase64AssetStore,
-        shapeUtils: syncShapeUtils,
-        bindingUtils: defaultBindingUtils,
-        users,
-      })
-  : ({ roomId, users }: SyncOptions) => useSyncDemo({ roomId, shapeUtils, users });
+// Use our upload endpoint even when the room runs on the demo sync backend.
+function useCanvasSync({ roomId, workspaceId, users }: SyncOptions) {
+  const assets = useMemo<TLAssetStore>(() => ({
+    async upload(_asset, file) {
+      const form = new FormData();
+      form.set("file", file);
+      form.set("workspaceId", workspaceId);
+      const response = await fetch("/api/uploads", { method: "POST", body: form });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error ?? "Image upload failed.");
+      return { src: new URL(result.url, window.location.origin).href };
+    },
+    resolve(asset) { return asset.props.src ?? null; },
+  }), [workspaceId]);
+  return useSync({
+    uri: `${SYNC_URL ?? "https://demo.tldraw.xyz"}/connect/${encodeURIComponent(roomId)}`,
+    assets,
+    shapeUtils: syncShapeUtils,
+    bindingUtils: defaultBindingUtils,
+    users,
+  });
+}
 
 // A cleaner, single-page canvas: no style panel, page menu or main menu, and a vertical toolbar
 // on the left with our Add table button.
@@ -115,7 +126,7 @@ export function CanvasEditor({
   }, [userId, userName]);
 
   // The Postgres autosave below also re-seeds a room that starts empty.
-  const store = useCanvasSync({ roomId: `outpost-${workspaceId}`, users });
+  const store = useCanvasSync({ roomId: `outpost-${workspaceId}`, workspaceId, users });
 
   const handleMount = (editor: Editor) => {
     setCanvasEditor(editor);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
 import * as Y from "yjs";
 import { useCreateBlockNote } from "@blocknote/react";
@@ -60,6 +61,20 @@ function CollaborativeEditor({
 }) {
   const fragment = doc.getXmlFragment("document-store");
   const editor = useCreateBlockNote({
+    uploadFile: async (file: File) => {
+      try {
+        const form = new FormData();
+        form.set("file", file);
+        form.set("workspaceId", workspaceId);
+        const response = await fetch("/api/uploads", { method: "POST", body: form });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? "Image upload failed.");
+        return result.url as string;
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Image upload failed.");
+        throw error;
+      }
+    },
     extensions: [CollaborationExtension({ fragment, user, provider })],
   });
 
