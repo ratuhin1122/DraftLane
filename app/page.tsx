@@ -47,12 +47,12 @@ export default function Home() {
               muted
               loop
               playsInline
-              poster="/videos/hero-poster.jpg"
+              poster="/videos/hero-mint-poster.jpg"
               aria-label="DraftLane walkthrough: the agent draws an architecture diagram and writes the spec"
               className="size-full object-cover"
             >
-              <source src="/videos/hero.webm" type="video/webm" />
-              <source src="/videos/hero.mp4" type="video/mp4" />
+              <source src="/videos/hero-mint.webm" type="video/webm" />
+              <source src="/videos/hero-mint.mp4" type="video/mp4" />
             </video>
           </div>
         </div>
