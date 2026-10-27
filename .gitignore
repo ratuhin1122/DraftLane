@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
+/media/draftlane-social/frames/
+/media/draftlane-social/*.wav
 
 # next.js
 /.next/

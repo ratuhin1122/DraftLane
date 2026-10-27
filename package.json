@@ -12,7 +12,9 @@
     "seed": "tsx --env-file=.env prisma/seed.ts",
     "test": "tsx --test --test-force-exit tests/*.test.ts",
     "test:integration": "tsx --test --test-force-exit tests/*.integration.test.mts",
-    "db:start": "powershell -NoProfile -File scripts/start-local-db.ps1"
+    "db:start": "powershell -NoProfile -File scripts/start-local-db.ps1",
+    "test:e2e": "playwright test",
+    "test:properties": "tsx --test --test-force-exit tests/properties.test.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.67",
@@ -51,12 +53,14 @@
     "zod": "^4.6.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "fast-check": "^4.10.2",
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
